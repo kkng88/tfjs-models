@@ -15,13 +15,19 @@ limitations under the License.
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1.0, user-scalable=no">
   <style>
+    html{
+      background-color:black;
+    }
     body {
       margin: 0;
     }
     #stats {
-      position: relative;
+      position: absolute;
       width: 100%;
       height: 80px;
+      bottom: 0;
+      display: flex;
+      justify-content: right;
     }
     #main {
       position: relative;
@@ -40,7 +46,7 @@ limitations under the License.
       display: flex;
       align-items: center;
       justify-content: center;
-      height: 84vh;
+      height: 97vh;
     }
     .canvas-wrapper{
       transform: scale(2);

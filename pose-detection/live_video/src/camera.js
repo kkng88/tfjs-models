@@ -217,7 +217,14 @@ export class Camera {
        var hip_width=k[11].x-k[12].x
        var ratio=(shoulder_width/hip_width).toFixed(2)
        // console.log(ratio)
+       // localhost.setItem("")
        this.ratio.innerHTML=ratio
+
+       //ruler
+       // if(ratio<1.5){
+       //
+       // }
+       // if
    }
  }
 
