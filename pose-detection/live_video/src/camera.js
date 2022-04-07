@@ -61,6 +61,7 @@ export class Camera {
       'styles': {polyline: {defaultOpacity: 1, deselectedOpacity: 1}}
     });
     this.scatterGLHasInitialized = false;
+    this.ratio=document.getElementById('ratio');
   }
 
   /**
@@ -151,6 +152,8 @@ export class Camera {
    * Draw the keypoints and skeleton on the video.
    * @param pose A pose with keypoints to render.
    */
+
+
   drawResult(pose) {
     if (pose.keypoints != null) {
       this.drawKeypoints(pose.keypoints);
@@ -165,7 +168,10 @@ export class Camera {
    * Draw the keypoints on the video.
    * @param keypoints A list of keypoints.
    */
+
   drawKeypoints(keypoints) {
+    this.calculateBMI(keypoints)
+
     const keypointInd =
         posedetection.util.getKeypointIndexBySide(params.STATE.model);
     this.ctx.fillStyle = 'Red';
@@ -199,6 +205,30 @@ export class Camera {
       this.ctx.stroke(circle);
     }
   }
+
+  /*KK edit*/
+
+ calculateBMI(k){
+   //reduce the frequency get the last 2 number to have 100 metric
+   //100 = 100% of frame per second
+   var percent=2
+   if(Number(Date.now().toString().slice(-2))<percent){
+       var shoulder_width=k[5].x-k[6].x
+       var hip_width=k[11].x-k[12].x
+       var ratio=(shoulder_width/hip_width).toFixed(2)
+       // console.log(ratio)
+       this.ratio.innerHTML=ratio
+   }
+ }
+
+ //close camera
+ // var videoEl = document.getElementById('video');
+ // stream = videoEl.srcObject;
+ // tracks = stream.getTracks();
+ // tracks.forEach(function(track) {
+ //    track.stop();
+ // });
+ // videoEl.srcObject = null;
 
   /**
    * Draw the skeleton of a body on the video.
