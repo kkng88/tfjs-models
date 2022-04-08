@@ -54,6 +54,8 @@ export class Camera {
     this.video = document.getElementById('video');
     this.canvas = document.getElementById('output');
     this.ctx = this.canvas.getContext('2d');
+    this.canvas2 = document.getElementById('output2');
+    this.ctx2 = this.canvas2.getContext('2d');
     this.scatterGLEl = document.querySelector('#scatter-gl-container');
     this.scatterGL = new scatter.ScatterGL(this.scatterGLEl, {
       'rotateOnStart': true,
@@ -62,6 +64,11 @@ export class Camera {
     });
     this.scatterGLHasInitialized = false;
     this.ratio=document.getElementById('ratio');
+    this.ratioHolder=[];
+    this.heart=document.getElementById('heart-img')
+    this.dataholder=[];
+    this.data = document.getElementById('data');
+    this.bmi = document.getElementById('bmi');
   }
 
   /**
@@ -132,7 +139,10 @@ export class Camera {
   drawCtx() {
     this.ctx.drawImage(
         this.video, 0, 0, this.video.videoWidth, this.video.videoHeight);
+    this.ctx2.drawImage(
+        this.video, 0, 0, this.video.videoWidth, this.video.videoHeight);
   }
+
 
   clearCtx() {
     this.ctx.clearRect(0, 0, this.video.videoWidth, this.video.videoHeight);
@@ -171,6 +181,7 @@ export class Camera {
 
   drawKeypoints(keypoints) {
     this.calculateBMI(keypoints)
+    this.moveHeart(keypoints)
 
     const keypointInd =
         posedetection.util.getKeypointIndexBySide(params.STATE.model);
@@ -212,20 +223,35 @@ export class Camera {
    //reduce the frequency get the last 2 number to have 100 metric
    //100 = 100% of frame per second
    var percent=2
+   const average = (array) => array.reduce((a, b) => a + b) / array.length;
+
    if(Number(Date.now().toString().slice(-2))<percent){
        var shoulder_width=k[5].x-k[6].x
        var hip_width=k[11].x-k[12].x
        var ratio=(shoulder_width/hip_width).toFixed(2)
        // console.log(ratio)
-       // localhost.setItem("")
-       this.ratio.innerHTML=ratio
+       //Average out the ratio
 
-       //ruler
-       // if(ratio<1.5){
-       //
-       // }
-       // if
+       this.ratioHolder.push(Number(ratio))
+       // console.log(this.ratioHolder)
+       // console.log(this.ratioHolder.slice(-10))
+       this.ratio.innerHTML=(average(this.ratioHolder.slice(-10))).toFixed(2)
+       localStorage.setItem("ratio",Number(ratio))
+       var text="neutral BMI"
+       if(ratio<1.6){
+          text="poor BMI"
+       }else if(ratio>1.7){
+          text="good BMI"
+       }
+       this.bmi.innerHTML=text
    }
+ }
+
+
+ moveHeart(k){
+   (this.heart).style.width=2*(k[5].x-k[6].x)/4.5+'px';
+   (this.heart).style.left=(313-2*(k[5].x+k[6].x)/2)+'px';
+   (this.heart).style.top=(10+(k[5].y+k[11].y)/2)+'px';
  }
 
  //close camera

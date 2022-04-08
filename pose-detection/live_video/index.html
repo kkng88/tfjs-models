@@ -15,12 +15,14 @@ limitations under the License.
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1.0, user-scalable=no">
   <style>
-    html{
+    html,body{
       background-color:black;
-    }
-    body {
       margin: 0;
+      height:100vh;
+      width:100vw;
+      overflow:hidden;
     }
+
     #stats {
       position: absolute;
       width: 100%;
@@ -37,11 +39,7 @@ limitations under the License.
     #scatter-gl-container {
       position: relative;
     }
-    .ratio{
-      position:absolute;
-      top:50vh;
-      left:50vw;
-    }
+
     .container{
       display: flex;
       align-items: center;
@@ -51,9 +49,131 @@ limitations under the License.
     .canvas-wrapper{
       transform: scale(2);
     }
+    .heart-img{
+      display:none;
+      position:absolute;
+      width:100px;
+      z-index:1;
+      margin-left:63vw;
+      margin-top:10vh;
+    }
+    .data{
+      position: absolute;
+      width: 313px;
+      color: #fff;
+      height: 100vh;
+      left: 0;
+      top: 0;
+      z-index: 1;
+      font-family:sans-serif;
+      font-size:16px;
+      padding:15px;
+    }
+    #output2{
+      position: absolute;
+      bottom: -16%;
+      left: 62%;
+      transform: scale(0.24);
+    }
+    #face-placeholder{
+      position:absolute;
+      top:0;
+      left:100%;
+    }
+    #face {
+        position: absolute;
+        top: 32vh;
+        z-index: 6;
+        left: 1vw;
+    }
+    .overlay-btn{
+      position:fixed;
+      z-index:10;
+    }
+    .overlay-btn button{
+      display:inline-block;
+      margin-right:5px;
+    }
+    .data-table td{
+      padding:3px;
+    }
+    #age-face-input{
+      position:absolute;
+      top:0;
+      left:-100%;
+      z-index:2;
+    }
+    .old-face{
+      position:absolute;
+      left:0;
+      top:58vh;
+      width:350px;
+      height:350px;
+      background-size:cover;
+      background-repeat:no-repeat;
+      z-index:5;
+    }
+    .banner {
+      width: 50vw;
+      height: 100px;
+      position: absolute;
+      background: #0006;
+      z-index: 1;
+      margin-left: 25vw;
+      margin-top: 5vh;
+      border-radius: 5px;
+      color: white;
+      font-size: 48px;
+      font-family: sans-serif;
+      text-align: center;
+    }
   </style>
 </head>
 <body>
+  <div class="banner">You are 76.3% likely to get a <b><u>heart attack</u></b> at 54 years old or older</div>
+  <div class="data" id='data'>
+    <table class='data-table'>
+
+        <tr>
+          <td>Gender</td><td id="gender"></td>
+        </tr>
+        <tr>
+          <td>Age</td><td><span id="age"></span></td>
+        </tr>
+        <tr>
+          <td>Emotion</td><td id="emotion"></td>
+        </tr>
+        <tr>
+          <td>Glasses</td><td id="glasses"></td>
+        </tr>
+        <tr>
+          <td>Makeup</td><td id="makeup"></td>
+        </tr>
+
+        <tr>
+          <td style='width:125px'>Ratio Metric</td>
+          <td>
+            <span class='ratio' id="ratio">
+              0
+            </span>
+          </td>
+        </tr>
+        <tr>
+          <td>BMI Class</td><td id="bmi"></td>
+        </tr>
+
+        <tr>
+          <td>Average Color</td><td></td>
+        </tr>
+
+        <tr>
+          <td>Face AI</td><td></td>
+        </tr>
+    </table>
+
+  </div>
+  <div class='old-face' id="old-face"></div>
+  <img class='heart-img' id='heart-img' src='./img/heart.gif'/>
   <div id="stats"></div>
   <div id="main">
     <div class="container">
@@ -67,16 +187,457 @@ limitations under the License.
           height: auto;
           ">
         </video>
+        <canvas id="output2" width="640" height="480"></canvas>
       </div>
       <div id="scatter-gl-container"></div>
     </div>
   </div>
-  <div class='ratio' id="ratio">
-    0
+
+  <canvas id="face" width="640" height="480"></canvas>
+  <div class="overlay-btn">
+      <button onclick='stopCamera()'>Stop Camera</button>
+      <button onclick='uploadimage()'>Detect Face</button>
+      <button onclick='showOverlay()'>Overlay Demo</button>
+      <button onclick='uploadToAgingAPI()'>Age Face</button>
   </div>
+
+  <canvas id="age-face-input"></canvas>
+  <img id="face-placeholder"/>
 </body>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/dat-gui/0.7.6/dat.gui.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/stats.js/r16/Stats.min.js"></script>
 <script src="src/index.js"></script>
+<script src="https://www.gstatic.com/firebasejs/4.3.0/firebase.js"></script>
+<script src="http://ajax.googleapis.com/ajax/libs/jquery/1.9.0/jquery.min.js"></script>
 
+<script>
+
+//1.Utilities
+//1.1. Auth
+// firebase.auth().signInWithEmailAndPassword('face@face.com','Abcd1234')
+//   .then((userCredential) => {
+//     // Signed in
+//     var user = userCredential.user;
+//     // ...
+//   })
+//   .catch((error) => {
+//     var errorCode = error.code;
+//     var errorMessage = error.message;
+//   });
+
+//1.2. Stop all cameras
+function stopCamera(){
+  var videoEl = document.getElementById('video');
+  stream = videoEl.srcObject;
+  tracks = stream.getTracks();
+  tracks.forEach(function(track) {
+     track.stop();
+  });
+  videoEl.srcObject = null;
+}
+
+
+
+  const config = {
+    apiKey: "",
+    authDomain: "",
+    databaseURL: "",
+    projectId: "",
+    storageBucket: "",
+    messagingSenderId: "",
+    appId: ""
+  };
+
+  firebase.initializeApp(config);
+  var storageRef = firebase.storage().ref();
+  var fdb = firebase.database();
+
+
+  function uploadimage(){
+  var canvas = document.getElementById("output2");
+   canvas.toBlob(function(blob){
+     var image = new Image();
+     image.src = blob;
+     var uploadTask = storageRef.child('images/face/'+Date.now()+".jpg").put(blob);
+     uploadTask.on('state_changed', function(snapshot) {
+         console.log(snapshot);
+     }, function(error) {
+         console.log(error);
+     }, function() {
+         var downloadURL = uploadTask.snapshot.downloadURL;
+         console.log(downloadURL);
+         processImage(downloadURL)
+     });
+   });
+   document.getElementById("face-placeholder").src=canvas.toDataURL("image/jpeg");
+  }
+
+</script>
+
+
+<script type="text/javascript">
+var subscriptionKey = "";
+var faceObj;
+    function processImage(url) {
+        var uriBase = "https://westcentralus.api.cognitive.microsoft.com/face/v1.0/detect";
+        var params = {
+            "returnFaceId": "true",
+            "returnFaceLandmarks": "true",
+            "returnFaceAttributes": "age,gender,headPose,smile,facialHair,glasses,emotion,hair,makeup,occlusion,accessories,blur,exposure,noise",
+        };
+
+        // Perform the REST API call.
+        $.ajax({
+            url: uriBase + "?" + $.param(params),
+            beforeSend: function(xhrObj){
+                xhrObj.setRequestHeader("Content-Type","application/json");
+                xhrObj.setRequestHeader("Ocp-Apim-Subscription-Key", subscriptionKey);
+            },
+            type: "POST",
+            data: '{"url": ' + '"' + url + '"}',
+        })
+
+        .done(function(data) {
+            console.log(data)
+            // $("#responseTextArea").val(JSON.stringify(data, null, 2));
+            displayResults(data)
+            resizeCanvas(data)
+			      drawCanvas(data)
+        }).fail(function(jqXHR, textStatus, errorThrown) {
+            var errorString = (errorThrown === "") ? "Error. " : errorThrown + " (" + jqXHR.status + "): ";
+            errorString += (jqXHR.responseText === "") ? "" : (jQuery.parseJSON(jqXHR.responseText).message) ?
+                jQuery.parseJSON(jqXHR.responseText).message : jQuery.parseJSON(jqXHR.responseText).error.message;
+                alert(errorString);
+        });
+    };
+
+    function resizeCanvas(data){
+        $("#face").attr("width",data[0].faceRectangle.width+"px")
+        $("#face").attr("height",data[0].faceRectangle.height+"px")
+
+        //for aging
+        $("#age-face-input").attr("width",data[0].faceRectangle.width*1.1+"px")
+        $("#age-face-input").attr("height",data[0].faceRectangle.height*1.1+"px")
+    }
+
+    function drawCanvas(data){
+			var c = document.getElementById("face");
+			var ctx = c.getContext("2d");
+			var img = document.getElementById("face-placeholder");
+			var s = data[0].faceLandmarks;
+			var r = data[0].faceRectangle;
+			ctx.drawImage(img,r.left,r.top,r.width,r.height,0,0,r.width,r.height);
+
+      //profiling
+      profileRace()
+
+      //aging functions
+      var c2 = document.getElementById("age-face-input");
+			var ctx2 = c2.getContext("2d");
+			ctx2.drawImage(img,r.left-r.width*0.25,r.top-r.height*0.3,r.width*1.5,r.height*1.6,0,0,r.width,r.height);
+
+			var fp_arr=[
+			s.eyebrowLeftInner,
+			s.eyebrowLeftOuter,
+			s.eyebrowRightInner,
+			s.eyebrowRightOuter,
+			s.eyeLeftBottom,
+			s.eyeLeftInner,
+			s.eyeLeftOuter,
+			s.eyeLeftTop,
+			s.eyeRightBottom,
+			s.eyeRightInner,
+			s.eyeRightOuter,
+			s.mouthLeft,
+			s.mouthRight,
+			s.noseLeftAlarOutTip,
+			s.noseLeftAlarTop,
+			s.noseRightAlarOutTip,
+			s.noseRightAlarTop,
+			s.noseRootLeft,
+			s.noseRootRight,
+			s.noseTip,
+			s.pupilLeft,
+			s.pupilRight,
+			s.underLipBottom,
+			s.underLipTop,
+			s.upperLipBottom,
+			s.upperLipTop
+			]
+
+			for (i = 0; i < fp_arr.length; i++) {
+				var x_p=fp_arr[i].x-r.left;
+				var y_p=fp_arr[i].y-r.top;
+				ctx.beginPath();
+				ctx.arc(x_p,y_p,1, 0, 2 * Math.PI);
+				ctx.strokeStyle="white";
+				//ctx.stroke();
+			}
+			var time=0;
+	function drawLine(from,to){
+			setTimeout(function(){
+			var x_f=from.x-r.left;
+			var y_f=from.y-r.top;
+			var x_t=to.x-r.left;
+			var y_t=to.y-r.top;
+			ctx.beginPath();
+			ctx.moveTo(x_f,y_f);
+			ctx.lineTo(x_t,y_t);
+			ctx.strokeStyle="white";
+			ctx.stroke();
+			},time)
+			time+=100;
+	}
+			//Nose
+			drawLine(s.noseTip,s.noseLeftAlarOutTip)
+			drawLine(s.noseTip,s.noseLeftAlarTop)
+			drawLine(s.noseTip,s.noseRightAlarOutTip)
+			drawLine(s.noseTip,s.noseRightAlarTop)
+			drawLine(s.noseTip,s.noseRootLeft)
+			drawLine(s.noseTip,s.noseRootRight)
+			drawLine(s.noseTip,s.mouthLeft)
+			drawLine(s.noseTip,s.mouthRight)
+			drawLine(s.noseTip,s.upperLipTop)
+			drawLine(s.noseRootLeft,s.noseRootRight)
+			drawLine(s.noseRightAlarOutTip,s.noseRightAlarTop)
+			drawLine(s.noseLeftAlarOutTip,s.noseLeftAlarTop)
+			drawLine(s.noseLeftAlarOutTip,s.mouthLeft)
+			drawLine(s.noseRightAlarOutTip,s.mouthRight)
+			drawLine(s.noseRootLeft,s.noseLeftAlarTop)
+			drawLine(s.noseRootRight,s.noseRightAlarTop)
+
+			//Lips
+			drawLine(s.upperLipTop,s.noseLeftAlarOutTip)
+			drawLine(s.upperLipTop,s.noseRightAlarOutTip)
+			drawLine(s.upperLipTop,s.mouthRight)
+			drawLine(s.upperLipTop,s.mouthLeft)
+			drawLine(s.upperLipTop,s.upperLipBottom)
+			drawLine(s.upperLipBottom,s.upperLipTop)
+			drawLine(s.upperLipBottom,s.mouthRight)
+			drawLine(s.upperLipBottom,s.mouthLeft)
+			drawLine(s.underLipBottom,s.mouthRight)
+			drawLine(s.underLipBottom,s.mouthLeft)
+			drawLine(s.underLipTop,s.mouthRight)
+			drawLine(s.underLipTop,s.mouthLeft)
+			drawLine(s.underLipTop,s.upperLipBottom)
+			drawLine(s.underLipTop,s.underLipBottom)
+
+			//Left Eye
+			drawLine(s.eyebrowLeftInner,s.eyebrowLeftOuter)
+			drawLine(s.eyebrowRightOuter,s.eyebrowRightInner)
+			drawLine(s.eyebrowLeftInner,s.eyeLeftTop)
+			drawLine(s.eyebrowLeftInner,s.eyeLeftInner)
+			drawLine(s.eyebrowLeftOuter,s.eyeLeftTop)
+			drawLine(s.eyebrowLeftOuter,s.eyeLeftOuter)
+			drawLine(s.pupilLeft,s.eyeLeftInner)
+			drawLine(s.pupilLeft,s.eyeLeftTop)
+			drawLine(s.pupilLeft,s.eyeLeftOuter)
+			drawLine(s.pupilLeft,s.eyeLeftBottom)
+			drawLine(s.eyeLeftTop,s.eyeLeftOuter)
+			drawLine(s.eyeLeftTop,s.eyeLeftInner)
+			drawLine(s.eyeLeftBottom,s.eyeLeftInner)
+			drawLine(s.eyeLeftBottom,s.eyeLeftOuter)
+
+			//Right Eye
+			drawLine(s.eyebrowRightInner,s.eyebrowRightOuter)
+			drawLine(s.eyebrowRightOuter,s.eyebrowRightInner)
+			drawLine(s.eyebrowRightInner,s.eyeRightTop)
+			drawLine(s.eyebrowRightInner,s.eyeRightInner)
+			drawLine(s.eyebrowRightOuter,s.eyeRightTop)
+			drawLine(s.eyebrowRightOuter,s.eyeRightOuter)
+			drawLine(s.pupilRight,s.eyeRightInner)
+			drawLine(s.pupilRight,s.eyeRightTop)
+			drawLine(s.pupilRight,s.eyeRightOuter)
+			drawLine(s.pupilRight,s.eyeRightBottom)
+			drawLine(s.eyeRightTop,s.eyeRightOuter)
+			drawLine(s.eyeRightTop,s.eyeRightInner)
+			drawLine(s.eyeRightBottom,s.eyeRightInner)
+			drawLine(s.eyeRightBottom,s.eyeRightOuter)
+
+			//Eye to Nose
+			drawLine(s.eyebrowRightInner,s.eyebrowLeftInner)
+			drawLine(s.eyebrowRightInner,s.noseRootRight)
+			drawLine(s.eyebrowLeftInner,s.noseRootLeft)
+			drawLine(s.eyeRightInner,s.noseRootRight)
+			drawLine(s.eyeLeftInner,s.noseRootLeft)
+			drawLine(s.eyeRightInner,s.noseRightAlarTop)
+			drawLine(s.eyeLeftInner,s.noseLeftAlarTop)
+			drawLine(s.eyeRightInner,s.noseRightAlarOutTip)
+			drawLine(s.eyeLeftInner,s.noseLeftAlarOutTip)
+			drawLine(s.eyeRightBottom,s.mouthRight)
+			drawLine(s.eyeRightBottom,s.noseRightAlarOutTip)
+			drawLine(s.eyeRightBottom,s.noseRightAlarTop)
+			drawLine(s.eyeLeftBottom,s.mouthLeft)
+			drawLine(s.eyeLeftBottom,s.noseLeftAlarOutTip)
+			drawLine(s.eyeLeftBottom,s.noseLeftAlarTop)
+			drawLine(s.eyeRightOuter,s.mouthRight)
+			drawLine(s.eyeLeftOuter,s.mouthLeft)
+
+			drawLine(s.eyebrowLeftOuter,s.mouthLeft)
+			drawLine(s.eyebrowRightOuter,s.mouthRight)
+			}
+
+    function displayResults(data){
+      var f=data[0].faceAttributes;
+      var emo="";
+      $.each(f.emotion,function(k,i){
+        if(i>0){
+          emo+=Math.round(i*100)+"% "+k+"<br>"
+        }
+      })
+
+      $("#gender").html(f.gender)
+      $("#age").html(f.age)
+      $("#emotion").html(emo)
+      $("#glasses").html(f.glasses)
+      $("#makeup").html(f.makeup.eyeMakeup||f.makeup.lipMakeup)
+  }
+
+    function showOverlay(){
+      // alert('toggling')
+      $('.heart-img').toggle()
+    }
+
+    //Aging functions
+    //face api key =
+    var cmfAPI=''
+
+
+
+    function uploadToAgingAPI(){
+      var agecan=document.getElementById('age-face-input')
+
+      var data={
+          api_key:cmfAPI,
+          action:"upload_image",
+          b64_image:agecan.toDataURL("image/jpeg")
+      }
+
+      $.ajax({
+          type: "POST",
+          url: "https://api.changemyface.com/api/",
+          data: data,
+          enctype: 'multipart/form-data',
+          cache: false,
+          success: function(data){
+            console.log(data)
+            if(data.success){
+              localStorage.setItem('cmf_session',data.session_id)
+
+              applyAgingEffects()
+            }
+          }
+        });
+
+        //https://changemyface.com/docs/uploading-an-image-post/
+        //success response
+        // {
+        //     "success": true,
+        //     "message": "Image uploaded successfully",
+        //     "code": 100,
+        //     "session_id": "2e49d9593d2dfb884916439f310af331",
+        //     "data": {
+        //         "fromServer": true,
+        //         "glasses": false,
+        //         "yaw": 0,
+        //         "face_detection_result": true,
+        //         "face_detection_apis_not_responding": false,
+        //         "curl_error": false,
+        //         "line": 280
+        //     }
+        // }
+
+    }
+
+    //https://changemyface.com/docs/apply-effects-post/
+    function applyAgingEffects(){
+      var data={
+          api_key:cmfAPI,
+          action:"apply_effects",
+          session_id:localStorage.getItem("cmf_session"),
+          effects:{
+              effect_id:2,
+              age:70,
+              dont_cache:false
+          }
+      }
+
+      $.ajax({
+          type: "POST",
+          url: "https://api.changemyface.com/api/",
+          data: data,
+          enctype: 'multipart/form-data',
+          cache: false,
+          success: function(data){
+            // console.log(data)
+            var results_arr=data.data.effect_results;
+            //assume only one
+            var file=results_arr[0].output_file
+            document.getElementById('old-face').style['background-image']=`url(${file})`;
+          }
+        });
+
+        //success response
+        //   {
+        //     "success": 1,
+        //     "message": "Effects applied successfully",
+        //     "code": 102,
+        //     "session_id": "d795ecf660783a63a9d616762b24925f",
+        //     "data": {
+        //         "effect_results": [
+        //             {
+        //                 "output_file": "https://api.changemyface.com/api/images/d795ecf660783a63a9d616762b24925f/902e1.jpeg",
+        //                 "success": 1,
+        //                 "age": 60,
+        //                 "category": null,
+        //                 "effect_id": "98"
+        //             },
+        //             {
+        //                 "output_file": "https://api.changemyface.com/api/images/d795ecf660783a63a9d616762b24925f/fafd1.jpeg",
+        //                 "success": 1,
+        //                 "age": 80,
+        //                 "category": null,
+        //                 "effect_id": "98"
+        //             }
+        //         ],
+        //         "fromServer": 1
+        //     }
+        // }
+    }
+
+
+    //canvas color
+
+    function getAverageCanvasColor(id){
+      	 var canvastest=document.getElementById(id)
+         var context=canvastest.getContext('2d')
+         var data=context.getImageData(0,0,canvastest.width,canvastest.height)
+         var length=data.data.length
+      	 var rgb = {r:0,g:0,b:0},
+             blockSize=5,
+             count=0,
+             i = -4
+
+         while ( (i += blockSize * 4) < length ) {
+              ++count;
+              rgb.r += data.data[i];
+              rgb.g += data.data[i+1];
+              rgb.b += data.data[i+2];
+          }
+
+          // ~~ used to floor values
+          rgb.r = ~~(rgb.r/count);
+          rgb.g = ~~(rgb.g/count);
+          rgb.b = ~~(rgb.b/count);
+
+          return rgb;
+    }
+
+    function profileRace(){
+      var rgb=getAverageCanvasColor('face')
+      document.getElementById('data').style['background-color']=`rgb(${rgb.r},${rgb.g},${rgb.b})`
+    }
+
+
+    </script>
 </html>
