@@ -1,14 +1,3 @@
-<!-- Copyright 2021 Google LLC. All Rights Reserved.
-Licensed under the Apache License, Version 2.0 (the "License");
-you may not use this file except in compliance with the License.
-You may obtain a copy of the License at
-    http://www.apache.org/licenses/LICENSE-2.0
-Unless required by applicable law or agreed to in writing, software
-distributed under the License is distributed on an "AS IS" BASIS,
-WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-See the License for the specific language governing permissions and
-limitations under the License.
-==============================================================================-->
 <!DOCTYPE html>
 <html>
 <head>
@@ -66,8 +55,11 @@ limitations under the License.
       top: 0;
       z-index: 1;
       font-family:sans-serif;
-      font-size:16px;
+      font-size:19px;
       padding:15px;
+    }
+    .bold{
+      font-weight:bold;
     }
     #output2{
       position: absolute;
@@ -82,13 +74,14 @@ limitations under the License.
     }
     #face {
         position: absolute;
-        top: 32vh;
+        top: 33vh;
         z-index: 6;
         left: 1vw;
     }
     .overlay-btn{
       position:fixed;
       z-index:10;
+      opacity: 0.15;
     }
     .overlay-btn button{
       display:inline-block;
@@ -96,6 +89,7 @@ limitations under the License.
     }
     .data-table td{
       padding:3px;
+      text-transform: capitalize
     }
     #age-face-input{
       position:absolute;
@@ -103,71 +97,126 @@ limitations under the License.
       left:-100%;
       z-index:2;
     }
-    .old-face{
-      position:absolute;
-      left:0;
-      top:58vh;
-      width:350px;
-      height:350px;
-      background-size:cover;
-      background-repeat:no-repeat;
-      z-index:5;
+    .old-face {
+      position: absolute;
+      left: 0;
+      top: 58vh;
+      width: 343px;
+      height: 343px;
+      background-size: 110% 110%;
+      background-repeat: no-repeat;
+      z-index: 5;
     }
     .banner {
-      width: 50vw;
-      height: 100px;
+      width: 47vw;
+      height: 91px;
       position: absolute;
       background: #0006;
       z-index: 1;
-      margin-left: 25vw;
-      margin-top: 5vh;
+      margin-left: 21vw;
+      margin-top: 9vh;
       border-radius: 5px;
       color: white;
-      font-size: 48px;
+      font-size: 35px;
       font-family: sans-serif;
       text-align: center;
-    }
+      display: none;
+      padding: 1.5vw;
+}
+
+    .qrcode{
+      width: 200px;
+      height: 200px;
+      position: absolute;
+      right: 40vh;
+      z-index: 1;
+      margin-top: 50px;
+      display:none;
+      }
+      .bg {
+          position: absolute;
+          right: 0;
+          width: 350px;
+          height: 100vh;
+          background-image: url(./img/bg.jpg);
+          background-size: cover;
+          background-repeat: no-repeat;
+          z-index: 3;
+          background-position: 100%;
+      }
+      .banner-cont2{
+        display:none;
+      }
+      .footer {
+          position: absolute;
+          bottom: 0;
+          font-family: sans-serif;
+          font-size: 30px;
+          left: calc(50vw - 90px);
+          z-index: 3;
+          color: white;
+          padding-bottom: 31px;
+      }
   </style>
 </head>
 <body>
-  <div class="banner">You are 76.3% likely to get a <b><u>heart attack</u></b> at 54 years old or older</div>
+  <div class="banner" id="banner">
+    <span class="banner-cont1">You are <span id='ha-percent'>76.3</span>% likely to get a <b><u>heart attack</u></b> at 54 years old.
+    A heart bypass costs RM80,000. Scan to get insured</span>
+
+    <span class="banner-cont2">
+      Special for you! Get insured for RM200,000 from 80 sen per day! Scan to get insured
+    </span>
+
+  </div>
+  <img class='qrcode' src="./img/qr.png" />
+  <div class='bg'></div>
   <div class="data" id='data'>
     <table class='data-table'>
 
         <tr>
-          <td>Gender</td><td id="gender"></td>
+          <td>Gender</td><td id="gender" class="bold"></td>
         </tr>
         <tr>
-          <td>Age</td><td><span id="age"></span></td>
+          <td>Age</td><td><span id="age" class="bold"></span></td>
         </tr>
         <tr>
-          <td>Emotion</td><td id="emotion"></td>
+          <td>Emotion</td><td id="emotion" class="bold"></td>
         </tr>
         <tr>
-          <td>Glasses</td><td id="glasses"></td>
+          <td>Glasses</td><td id="glasses" class="bold"></td>
         </tr>
         <tr>
-          <td>Makeup</td><td id="makeup"></td>
+          <td>
+           <br>  
+            <!-- Makeup -->
+          </td>
+          <td id="makeup" class="bold">
+          </td>
         </tr>
 
         <tr>
           <td style='width:125px'>Ratio Metric</td>
-          <td>
+          <td class="bold">
             <span class='ratio' id="ratio">
               0
             </span>
           </td>
         </tr>
         <tr>
-          <td>BMI Class</td><td id="bmi"></td>
+          <td>BMI Class</td><td id="bmi" class="bold"></td>
         </tr>
 
         <tr>
-          <td>Average Color</td><td></td>
+          <td></td><td></td>
         </tr>
 
         <tr>
-          <td>Face AI</td><td></td>
+          <td colspan='2'>Face AI</td><td></td>
+        </tr>
+
+        <tr>
+          <td colspan="2"><br><br><br><br><br><br><br><br><br>You at 70 years old</td><td></td>
         </tr>
     </table>
 
@@ -195,14 +244,18 @@ limitations under the License.
 
   <canvas id="face" width="640" height="480"></canvas>
   <div class="overlay-btn">
-      <button onclick='stopCamera()'>Stop Camera</button>
-      <button onclick='uploadimage()'>Detect Face</button>
+
       <button onclick='showOverlay()'>Overlay Demo</button>
-      <button onclick='uploadToAgingAPI()'>Age Face</button>
+      <button onclick='uploadimage()'>Detect Face</button>
+      <!-- <button onclick='uploadToAgingAPI()'>Age Face</button> -->
+      <button onclick='showCTA()'>Show CTA</button>
+      <button onclick='swapCTA()'>Swap CTA</button>
+      <button onclick='stopCamera()'>Stop Camera</button>
   </div>
 
   <canvas id="age-face-input"></canvas>
   <img id="face-placeholder"/>
+  <div class='footer'>Buy Now Claim Later</div>
 </body>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/dat-gui/0.7.6/dat.gui.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/stats.js/r16/Stats.min.js"></script>
@@ -237,15 +290,35 @@ function stopCamera(){
 }
 
 
+function showCTA(){
+   $('.qrcode').toggle();
+   $('.banner').toggle();
+
+   var grisk=1
+   var g=$("#gender").html().toLowerCase()
+   if(g=="male"){
+      grisk=1.5
+   }
+   var arisk=1
+   if(age>30){
+     arisk=1.5
+   }
+   $("#ha-percent").html((35.5*arisk*grisk).toFixed(2))
+}
+
+function swapCTA(){
+    $(".banner-cont1").toggle()
+    $(".banner-cont2").toggle()
+}
 
   const config = {
-    apiKey: "",
-    authDomain: "",
-    databaseURL: "",
-    projectId: "",
-    storageBucket: "",
-    messagingSenderId: "",
-    appId: ""
+    apiKey: "AIzaSyCMIzb_dd7K78br-klzrPwvVSUEWkNDfcQ",
+    authDomain: "iconsent-18fa0.firebaseapp.com",
+    databaseURL: "https://iconsent-18fa0.firebaseio.com",
+    projectId: "iconsent-18fa0",
+    storageBucket: "iconsent-18fa0.appspot.com",
+    messagingSenderId: "1070697938517",
+    appId: "1:1070697938517:web:a11719b3599718fefe9edc"
   };
 
   firebase.initializeApp(config);
@@ -276,7 +349,7 @@ function stopCamera(){
 
 
 <script type="text/javascript">
-var subscriptionKey = "";
+var subscriptionKey = "56f7c47086314f3cae955fd9716d90ee";
 var faceObj;
     function processImage(url) {
         var uriBase = "https://westcentralus.api.cognitive.microsoft.com/face/v1.0/detect";
@@ -303,6 +376,7 @@ var faceObj;
             displayResults(data)
             resizeCanvas(data)
 			      drawCanvas(data)
+            // $('.heart-img').toggle()
         }).fail(function(jqXHR, textStatus, errorThrown) {
             var errorString = (errorThrown === "") ? "Error. " : errorThrown + " (" + jqXHR.status + "): ";
             errorString += (jqXHR.responseText === "") ? "" : (jQuery.parseJSON(jqXHR.responseText).message) ?
@@ -335,6 +409,8 @@ var faceObj;
       var c2 = document.getElementById("age-face-input");
 			var ctx2 = c2.getContext("2d");
 			ctx2.drawImage(img,r.left-r.width*0.25,r.top-r.height*0.3,r.width*1.5,r.height*1.6,0,0,r.width,r.height);
+
+      uploadToAgingAPI()
 
 			var fp_arr=[
 			s.eyebrowLeftInner,
@@ -499,9 +575,9 @@ var faceObj;
     }
 
     //Aging functions
-    //face api key =
-    var cmfAPI=''
-
+    //face api key = lywvDWe2HV4FSmbvzCkz2fKgWKXWHkVk
+    var cmfAPI='lywvDWe2HV4FSmbvzCkz2fKgWKXWHkVk'
+    //"odo7rcxQY7P7VB6srMToU9OCjXERK63Z"
 
 
     function uploadToAgingAPI(){
@@ -574,6 +650,7 @@ var faceObj;
             //assume only one
             var file=results_arr[0].output_file
             document.getElementById('old-face').style['background-image']=`url(${file})`;
+            showCTA()
           }
         });
 
